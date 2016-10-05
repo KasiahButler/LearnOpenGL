@@ -65,6 +65,21 @@ int main()
 	//Register callback functions after the window is created but before the game loop is initiated
 	glfwSetKeyCallback(window, key_callback);
 
+	GLfloat vertices[] = {-0.5f, -0.5f,  0.0f,
+						   0.5f, -0.5f,  0.0f,
+						   0.0f,  0.5f,  0.0f };
+	
+	//VBO = Vertex Buffer Object, holds a bunch of Vertices in GPU Memory, faster than passing data from CPU to GPU constantly.
+	GLuint VBO;
+	//Generate the Buffer (Creating an Empty Variable in GPU Memory) for the VBO, first we tell it how many Buffers of this Size (1 in this case) 
+	//and then give it an index (GLuint VBO holds this index number)
+	glGenBuffers(1, &VBO);
+	//Now we bind the Buffer to a Buffer Type (Array Buffer in this Case)
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//Finally we copy our vertices array into the Buffer we just created
+	//GL_ARRAY_BUFFER is the Buffer type we bound to earlier, tell it how many bytes its going to use, pass the vertices data, then tell it the data will be Static
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
 	//Game Loop, keeps the Window open until it's told to close out
 	while (!glfwWindowShouldClose(window))
 	{
