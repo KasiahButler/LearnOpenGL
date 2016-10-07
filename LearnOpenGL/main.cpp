@@ -1,9 +1,9 @@
-#include "test.h"
+#include "shader.h"
 
-#define GLEW_STATIC
-#include <GL/glew.h>
-#include <GLFW\glfw3.h>
-#include <iostream>
+//#define GLEW_STATIC
+//#include <GL/glew.h>
+//#include <GLFW\glfw3.h>
+//#include <iostream>
 
 //KeyCallback function takes in a Framebuffer, key code, whether its pressed or released, if shift/ctrl/alt or super keys are pressed
 //This is templated in a way described by OpenGL so that it can be called by an OpenGL function
@@ -65,33 +65,65 @@ int main()
 	//Register callback functions after the window is created but before the game loop is initiated
 	glfwSetKeyCallback(window, key_callback);
 
-	GLfloat vertices[] = {-0.5f, -0.5f,  0.0f,
-						   0.5f, -0.5f,  0.0f,
-						   0.0f,  0.5f,  0.0f };
-	
+	GLfloat vertices[] = {-0.5f, -0.5f,  0.0f, 1.0f, 0.0f, 0.0f,
+						   0.5f, -0.5f,  0.0f, 0.0f, 1.0f, 0.0f,
+						   0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f };
+
+	Shader basicShader("../dep/shaders/vertex.txt", "../dep/shaders/frag.txt");
+
 	//VBO = Vertex Buffer Object, holds a bunch of Vertices in GPU Memory, faster than passing data from CPU to GPU constantly.
 	GLuint VBO;
-	//Generate the Buffer (Creating an Empty Variable in GPU Memory) for the VBO, first we tell it how many Buffers of this Size (1 in this case) 
-	//and then give it an index (GLuint VBO holds this index number)
+	GLuint VAO;
+	GLuint EBO;
+	//Generate the Buffer (Creating an Empty Variable in GPU Memory) for the VBO and VAO, first we tell it how many Buffers of this Size (1 in this case) 
+	//and then give it an index (GLuint VBO/VAO holds this index number)
 	glGenBuffers(1, &VBO);
+	//glGenBuffers(1, &EBO);
+	glGenVertexArrays(1, &VAO);
+	//Bind the VAO
+	glBindVertexArray(VAO);
 	//Now we bind the Buffer to a Buffer Type (Array Buffer in this Case)
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	//Finally we copy our vertices array into the Buffer we just created
 	//GL_ARRAY_BUFFER is the Buffer type we bound to earlier, tell it how many bytes its going to use, pass the vertices data, then tell it the data will be Static
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	//Link our Vertex Attributes and tell it how it should interperet our Vertex Data then enable the Array
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	//Unbind the VAO
+	glBindVertexArray(0);
 
 	//Game Loop, keeps the Window open until it's told to close out
 	while (!glfwWindowShouldClose(window))
 	{
 		//Check for inputs and other events
 		glfwPollEvents();
+
 		//Sets the OpenGL Clear Color and then clear the Color Buffer
 		glClearColor(0.5f, 0.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		//Ready the Shader Program, Bind the VAO and Draw our Triangle then unbind the VAO
+		basicShader.use();
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
 		//Swap the Front Buffer with the Back Buffer that has the window loaded into it
 		//Our context is drawn to the GPU's Back Buffer and then passed to the Front Buffer once fully loaded to help avoid artifacting.
 		glfwSwapBuffers(window);
 	}
+	//De-Allocate all resources once they're done being used
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
 
 	//Terminates OpenGL (GLFW) and frees up our used resources.
 	glfwTerminate();
