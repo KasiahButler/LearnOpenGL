@@ -69,12 +69,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="shader.h" />
+    <ClInclude Include="loadGL.h" />
+    <ClInclude Include="makeGL.h" />
+    <ClInclude Include="objectsGL.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="loadGL.cpp" />
+    <ClCompile Include="makeGL.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="objectsGL.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\dep\shaders\frag.txt" />

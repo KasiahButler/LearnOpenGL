@@ -1,9 +1,8 @@
-#include "shader.h"
+#include "loadGL.h"
+#include "makeGL.h"
 
-//#define GLEW_STATIC
-//#include <GL/glew.h>
-//#include <GLFW\glfw3.h>
-//#include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+#include <STB\stb_image.h>
 
 //KeyCallback function takes in a Framebuffer, key code, whether its pressed or released, if shift/ctrl/alt or super keys are pressed
 //This is templated in a way described by OpenGL so that it can be called by an OpenGL function
@@ -19,113 +18,58 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 int main()
 {
-	//Initialized OpenGL
-	glfwInit();
-	//Sets the Major Version of OpenGL (3.0)
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	//Sets the Minor Version of OpenGL (Now the OpenGL version is 3.3)
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	//Tell OpenGL we are using the CORE Profile instead of IMMEDIATE
-	//CORE profile allows custom shaders and a NON-FIXED SHADER PIPELINE, IMMEDIATE uses the FIXED SHADER PIPELINE (Old School)
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	//Tells OpenGL that the rendering Window is not user Resizeable (No drag to stretch)
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-
-	//Creates an OpenGL Windowing Framebuffer called window with a Width of 800, Height of 600, Named "Tester"
-	GLFWwindow* window = glfwCreateWindow(800, 600, "Tester", nullptr, nullptr);
-	//If the Window is not created enter this loop
-	if (window == nullptr)
-	{
-		//Output that the Window did not instantiate and close out of the Program
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-		return -1;
-	}
-	//Set the current OpenGL to our window Context
-	glfwMakeContextCurrent(window);
-
-	//Starts up GLEW
-	glewExperimental = GL_TRUE;
-	//If GLEW doesn't start up or has an error close out of the Program.
-	if (glewInit() != GLEW_OK)
-	{
-		std::cout << "Failed to initialize GLEW" << std::endl;
-		return -1;
-	}
-
-	//Viewport size variables
-	int width, height;
-	//Checks the window Framebuffer for it's width and height and sets them to our Viewport size variables
-	glfwGetFramebufferSize(window, &width, &height);
+	Window window;
+	window.init();
 	
 	//Set the OpenGL viewport to be the same size as our window Framebuffer
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, window.getWidth(), window.getHeight());
 
 	//Register our key_callback function with the proper OpenGL callback
 	//Register callback functions after the window is created but before the game loop is initiated
-	glfwSetKeyCallback(window, key_callback);
+	glfwSetKeyCallback(window.winHandle, key_callback);
+						//Vertices			         Colors			    TexCoords
+	GLfloat vertices[] = { 0.5f,  0.5f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
+						   0.5f, -0.5f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+						  -0.5f, -0.5f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+						  -0.5f,  0.5f, 0.0f, 0.0f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f };
 
-	GLfloat vertices[] = {-0.5f, -0.5f,  0.0f, 1.0f, 0.0f, 0.0f,
-						   0.5f, -0.5f,  0.0f, 0.0f, 1.0f, 0.0f,
-						   0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f };
+	Vertex verts[4];
+	verts[0] = { {  0.5f,  0.5f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0, 0, 1.0f, 0 }, { 1.0f, 1.0f } };
+	verts[1] = { {  0.5f, -0.5f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 0, 0, 1.0f, 0 }, { 1.0f, 0.0f } };
+	verts[2] = { { -0.5f, -0.5f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 0, 0, 1.0f, 0 }, { 0.0f, 0.0f } };
+	verts[3] = { { -0.5f,  0.5f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f, 1.0f }, { 0, 0, 1.0f, 0 }, { 0.0f, 1.0f } };
 
-	Shader basicShader("../dep/shaders/vertex.txt", "../dep/shaders/frag.txt");
+	GLuint tris[] = { 0,1,3,1,2,3 };
 
-	//VBO = Vertex Buffer Object, holds a bunch of Vertices in GPU Memory, faster than passing data from CPU to GPU constantly.
-	GLuint VBO;
-	GLuint VAO;
-	GLuint EBO;
-	//Generate the Buffer (Creating an Empty Variable in GPU Memory) for the VBO and VAO, first we tell it how many Buffers of this Size (1 in this case) 
-	//and then give it an index (GLuint VBO/VAO holds this index number)
-	glGenBuffers(1, &VBO);
-	//glGenBuffers(1, &EBO);
-	glGenVertexArrays(1, &VAO);
-	//Bind the VAO
-	glBindVertexArray(VAO);
-	//Now we bind the Buffer to a Buffer Type (Array Buffer in this Case)
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//Finally we copy our vertices array into the Buffer we just created
-	//GL_ARRAY_BUFFER is the Buffer type we bound to earlier, tell it how many bytes its going to use, pass the vertices data, then tell it the data will be Static
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	Shader  basicShader = loadShader("../dep/shaders/vertex.txt", "../dep/shaders/frag.txt");
+	Texture boxTexture = loadTexture("../dep/textures/container.jpg");
+	Texture faceTexture = loadTexture("../dep/textures/awesomeface.png");
 
-	//Link our Vertex Attributes and tell it how it should interperet our Vertex Data then enable the Array
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	//Unbind the VAO
-	glBindVertexArray(0);
+	Geometry testGeo = makeGeometry(verts, 4, tris, 6);
 
 	//Game Loop, keeps the Window open until it's told to close out
-	while (!glfwWindowShouldClose(window))
+	while (window.update())
 	{
-		//Check for inputs and other events
-		glfwPollEvents();
-
-		//Sets the OpenGL Clear Color and then clear the Color Buffer
-		glClearColor(0.5f, 0.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
 		//Ready the Shader Program, Bind the VAO and Draw our Triangle then unbind the VAO
-		basicShader.use();
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		basicShader.update();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, boxTexture.handle);
+		glUniform1i(glGetUniformLocation(basicShader.handle, "boxTexture"), 0);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, faceTexture.handle);
+		glUniform1i(glGetUniformLocation(basicShader.handle, "faceTexture"), 1);
+
+		glBindVertexArray(testGeo.vao);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
-		//Swap the Front Buffer with the Back Buffer that has the window loaded into it
-		//Our context is drawn to the GPU's Back Buffer and then passed to the Front Buffer once fully loaded to help avoid artifacting.
-		glfwSwapBuffers(window);
 	}
 	//De-Allocate all resources once they're done being used
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
+	glDeleteVertexArrays(1, &testGeo.vao);
+	glDeleteBuffers(1, &testGeo.vbo);
 
 	//Terminates OpenGL (GLFW) and frees up our used resources.
-	glfwTerminate();
+	window.terminate();
 	return 0;
 }
